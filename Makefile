@@ -3,7 +3,7 @@ INC = /usr/include/efi
 CFLAGS = -I$(INC) -I$(INC)/x86_64 -I$(INC)/protocol \
 		 -Wall -std=c11 \
 		 -fpic -fshort-wchar -fno-stack-protector -mno-red-zone
-LDFLAGS = -nostdlib -znocombreloc -shared -Bsymbolic \
+LDFLAGS =  -znocombreloc -shared -Bsymbolic \
 		  -L/usr/lib -lgnuefi -lefi \
 		  -T/usr/lib/elf_x86_64_efi.lds
 

@@ -1,4 +1,3 @@
-
 #include <efi.h>
 #include <efilib.h>
 #include <stdlib.h>
@@ -8,6 +7,7 @@
 #define WIDE2(x) L##x
 #define WIDE1(x) WIDE2(x)
 #define WFILE WIDE1(__FILE__)
+#define MAX_BUFFER_SIZE 1024*1024
 
 #define CHECK(rc, crit) { \
   if (EFI_ERROR(rc)) { \
@@ -22,20 +22,82 @@
 uint32_t color(uint8_t red, uint8_t green, uint8_t blue) {
   return (blue << 24) | (green << 16) | (red << 8) | 0xff;
 }
+static inline uint8_t inb(uint16_t p)
+{
+    uint8_t r;
+    __asm__("inb %1, %0" : "=a" (r) : "dN" (p));
+    return r;
+}
 
-static inline uint64_t rdtsc(void)
+static inline void outb(uint16_t p, uint8_t d)
+{
+    __asm__("outb %1, %0" : : "dN" (p), "a" (d));
+}
+static uint8_t rtcs(){
+    uint8_t last = 0, sec;
+    do { /* until value is the same twice in a row */
+        /* wait for update not in progress */
+        do { outb(0x70, 0x0A); } while (inb(0x71) & 0x80);
+        outb(0x70, 0x00);
+        sec = inb(0x71);
+    } while (sec != last && (last = sec));
+    return sec;
+
+}
+
+static inline uint64_t rdtsc()
 {
     uint32_t hi, lo;
     __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
     return ((uint64_t) lo) | (((uint64_t) hi) << 32);
 }
+uint64_t tpms;
+static void tps()
+{
+    static uint64_t ti = 0;
+    static uint8_t last_sec = 0xFF;
+    uint8_t sec = rtcs();
+    if (sec != last_sec) {
+        last_sec = sec;
+        uint64_t tf = rdtsc();
+        tpms = (uint32_t) ((tf - ti) >> 3) / 125;
+        ti = tf;
+    }
+}
+
+uint64_t timer = 0;
+
+static int interval(uint32_t ms){
+	uint64_t tf = rdtsc();
+	if( tf - timer >= tpms*ms){ timer = tf; return 1;}
+	else return 0;
+}
+static int wait(uint32_t ms){
+	if(timer != 0){
+	if( rdtsc() - timer >= tpms*ms) {timer = 0; return 1;}
+	else return 0;}
+	else {timer = rdtsc(); return 0;}
+}
+  int w1 = 25;
+  int h1 = 25;
+
+  int w2 = 25;
+  int h2 = 25;
+
+  int w3 = 35;
+  int h3 = 35;
+
+  int w4 = 5;
+  int h4 = 5;
+
+  int xinit;
+  int yinit;
 
 void square(uint32_t *buf, uint32_t color, unsigned x, unsigned y, unsigned width, unsigned height, unsigned stride) {
   for (unsigned yy = y; yy < y + height; ++yy)
     for (unsigned xx = x; xx < x + width; ++xx)
       buf[yy * stride + xx] = color;
 }
-
 
 
 void deleteEnemy( int enArr[], int n, int *num, int x, int y, int w2, int h2, int w){
@@ -50,38 +112,49 @@ void deleteEnemy( int enArr[], int n, int *num, int x, int y, int w2, int h2, in
     }
 }
 
-void blockCollision( int blocks[], int *en1, int *en2, int nBl, int delta, int w3, int h3, int w2, int h2, int flag){
+void blockCollision( int blocks[], int *en1, int *en2, int nBl, int delta, int w3, int h3, int w2, int h2, int flag, int isBullet, int *nmr){
 	for( int i = 0; i < nBl; i+=2){
 
 	   if(*en2+h2 >= blocks[i+1] && *en2 <= blocks[i+1]+h3 && flag == 0){
+		
 		// right side
 		if( *en1 - blocks[i] <= w3 && \
 		    *en1 - blocks[i] >= 0 && \
-		    *en1 + delta >= blocks[i]+w3)
-		*en1 = blocks[i]+w3+1;
+		    *en1 + delta >= blocks[i]+w3){
+		if(isBullet == 1){ *en1 = -100; *en2 = -100; *nmr-=1;}
+		else *en1 = blocks[i]+w3+1;
+		}
+		
 
 		// left side
 		if( blocks[i] - *en1 <= w2 && \
 		    blocks[i] - *en1 >= 0 && \
-		    *en1+w2 - delta <= blocks[i])
-		*en1 = blocks[i]-w2-1;
+		    *en1+w2 - delta <= blocks[i]){
+		if(isBullet == 1){ *en1 = -100; *en2 = -100; *nmr -= 1;}
+		else *en1 = blocks[i]-w2-1;
+		}
+
 	   }
 	   if( *en1 <= blocks[i]+w3 && *en1 + w2 >= blocks[i] && flag == 1){
 		// bottom side
 		if( *en2 - blocks[i+1] <= h3 && \
                     *en2 - blocks[i+1] >= 0 && \
-		    *en2 + delta >= blocks[i+1] + h3)
-                *en2 = blocks[i+1]+h3+1;
+		    *en2 + delta >= blocks[i+1] + h3){
+		if(isBullet == 1){ *en1 = -100; *en2 = -100; *nmr -= 1;}
+ 	        else  *en2 = blocks[i+1]+h3+1;
+		}
 		// upper side
 		if( blocks[i+1] - *en2 <= h2 && \
                     blocks[i+1] - *en2 >= 0 && \
-		    *en2 + h2 - delta <= blocks[i+1])
-                *en2 = blocks[i+1]-h2-1;
+		    *en2 + h2 - delta <= blocks[i+1]){
+		if(isBullet == 1){ *en1 = -100; *en2 = -100; *nmr -= 1;}
+                else *en2 = blocks[i+1]-h2-1;
+		}
 	   }
 	}
 }
 
-void moveEnemies( int enArr [], int blocks[], int nEn, int nBl, int delta, int x, int y, int w3, int h3, int w2, int h2, int width, int height ){
+void moveEnemies( int enArr [], int blocks[], int nEn, int nBl, int delta, int x, int y, int w3, int h3, int w2, int h2, int width, int height, int isBullet, int *nmr){
 
 	for( int i = 0; i < nEn; i+=2)
 	   if(enArr[i] != -100){
@@ -105,8 +178,8 @@ void moveEnemies( int enArr [], int blocks[], int nEn, int nBl, int delta, int x
 			if( enArr[i+1] < 0) enArr[i+1] = 0;
 			if( enArr[i+1] + h2 > height) enArr[i+1] = height-h2;
          	}
-		blockCollision(blocks,&enArr[i], &enArr[i+1],nBl,delta,w3,h3,w2,h2,flag);
-	   }
+		blockCollision(blocks,&enArr[i],&enArr[i+1],nBl,delta,w3,h3,w2,h2,flag,isBullet,nmr);
+	  }
 }
 
 void generateBlocks( int arr[], int n, int x, int y, int width, int height, int w, int h){
@@ -129,18 +202,99 @@ void generateEnemies( int enArr[], int nEn, int blArr[], int nBl, int x, int y, 
 	}
 	return;
 }
+
+void shootBullet( int bullets[], int enArr[], int nEn,int x, int y){
+	xinit = x;
+	yinit = y;
+	for(int i = 0; i< nEn; i+=2)
+		if(enArr[i] != -100 && enArr[i+1] != -100){
+
+		if(enArr[i] < x){
+			bullets[i] = enArr[i]+w2;
+                        if(enArr[i+1] == y) bullets[i+1] = enArr[i+1];
+                        if(enArr[i+1] < y) bullets[i+1] = enArr[i+1]+h2;
+                        if(enArr[i+1] > y) bullets[i+1] = enArr[i+1];
+                }
+                else if(enArr[i] == x){
+			bullets[i] = enArr[i];
+                        if(enArr[i+1] < y) bullets[i+1] = enArr[i+1]+h2;
+                        if(enArr[i+1] > y) bullets[i+1] = enArr[i+1]-h2;
+                }
+                else if(enArr[i] > x){
+			bullets[i] = enArr[i]-w4;
+                        if(enArr[i+1] == y) bullets[i+1] = enArr[i+1];
+                        if(enArr[i+1] < y) bullets[i+1] = enArr[i+1]+h2;
+                        if(enArr[i+1] > y) bullets[i+1] = enArr[i+1]-h4;
+                }
+
+		}
+
+}
+
+void moveBullets(int bullets[], int enemies[], int blocks[], int *nmr, int num, int nEn, int nBl, int delta, int width, int height, int x, int y){
+	moveEnemies(bullets,blocks,nEn,nBl,delta, xinit,yinit,w3,h3,w4,h4,width,height,1,nmr);
+	for( int i = 0 ; i < nEn; i+=2)
+		if(abs(bullets[i]-xinit) < w1 &&  abs(bullets[i+1]-yinit)<h1)
+		{	if(x != xinit && y != yinit)
+		{		bullets[i] = -100;
+				bullets[i+1] = -100;
+				*nmr -= 1;
+		}}
+//		else moveEnemies(bullets,blocks,nEn,nBl,delta, xinit,yinit,w3,h3,w4,h4,width,height,1);
+	if(*nmr == 0){ shootBullet(bullets,enemies,nEn,x,y); *nmr = num/2;}
+}
+
+EFI_BOOT_SERVICES *gBS;
+
+STATIC EFI_STATUS LoadBitmapFile( IN CHAR16 *Path, \
+				  OUT VOID **BmpBuffer, \
+			  	  OUT UINTN *BmpSize ){
+	EFI_STATUS Status = EFI_SUCCESS;
+	EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *SimpleFile;
+	EFI_FILE_PROTOCOL *Root;
+	EFI_FILE_PROTOCOL *File;
+	UINTN BufferSize;
+	VOID *Buffer = NULL;
+
+	Status = uefi_call_wrapper(gBS->LocateProtocol,3,
+				   &gEfiSimpleFileSystemProtocolGuid,
+				   NULL,
+				   (VOID **)&SimpleFile);
+	if(EFI_ERROR(Status)) return Status;
+
+	Status = uefi_call_wrapper(SimpleFile->OpenVolume,2,SimpleFile,&Root);
+	if(EFI_ERROR(Status)) return Status;
+
+	Status = uefi_call_wrapper(Root->Open,4,Root,&File,Path,EFI_FILE_MODE_READ,EFI_FILE_READ_ONLY);
+	if(EFI_ERROR(Status)) return Status;
+
+	BufferSize = MAX_BUFFER_SIZE;
+	Buffer = AllocatePool(BufferSize);
+	if( Buffer == NULL) return EFI_OUT_OF_RESOURCES;
+
+	Status = uefi_call_wrapper(File->Read,3,File,&BufferSize,Buffer);
+
+	if( BufferSize == MAX_BUFFER_SIZE){
+		if(Buffer != NULL) FreePool(Buffer);
+		return EFI_OUT_OF_RESOURCES;
+	}
+	Buffer = ReallocatePool(Buffer,MAX_BUFFER_SIZE, BufferSize);
+	*BmpBuffer = Buffer;
+	*BmpSize = BufferSize;
+	return EFI_SUCCESS;
+}
+
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
   InitializeLib(img, systab);
 
   EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
- // EFI_SIMPLE_POINTER_PROTOCOL *mouse = 0;
-
   EFI_STATUS status = LibLocateProtocol(&GraphicsOutputProtocol, (void**)&gop);
+
   CHECK(status, TRUE);
 
   int width = gop->Mode->Info->HorizontalResolution;
   int height = gop->Mode->Info->VerticalResolution-100;
- // gST->ConOut->EnableCursor(gST->ConOut,TRUE);
+
   if (gop->Mode->Info->PixelFormat != PixelBlueGreenRedReserved8BitPerColor) {
     Print(L"Error: don't know about pixel format %d\r\n", gop->Mode->Info->PixelFormat);
     Exit(EFI_SUCCESS, 0, NULL);
@@ -152,15 +306,6 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
   int x = (uint32_t) rdtsc() % width;
   int y = (uint32_t) rdtsc() % height;
 
-  int w1 = 25;
-  int h1 = 25;
-
-  int w2 = 25;
-  int h2 = 25;
-
-  int w3 = 35;
-  int h3 = 35;
-
   int delta = 10;
 
   int level = 1;
@@ -168,6 +313,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
 
   int nEn = 0;
   int nBl = 0;
+
   while(level <= 3 && lifes > 0){
   if(level == 1){
    nEn = 8;
@@ -185,33 +331,48 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
   int enemies[nEn];
   int blocks[nBl];
   int num = nEn;
+  int numB = nEn/2;
+  int bullets[nEn];
+  VOID *BmpBuffer = NULL;
+  UINTN BmpSize;
+  status = LoadBitmapFile(L"war.bmp", &BmpBuffer, &BmpSize);
+  if(EFI_ERROR(status)){
+    if(BmpBuffer != NULL)
+	FreePool(BmpBuffer);
+  return status;
+  }
 
   generateBlocks(blocks,nBl,x,y,width, height,w3,h3);
   generateEnemies(enemies,nEn,blocks,nBl,x,y,w3,h3,width,height);
-
+  shootBullet(bullets,enemies,nEn,x,y);
+  uint32_t itpms;
+  tps();
+  itpms = tpms; while (tpms == itpms) tps();
+  itpms = tpms; while (tpms == itpms) tps();
   while (num!=0) {
-
-    moveEnemies(enemies,blocks,nEn,nBl,10,x,y,w3,h3,w2,h2,width,height);
-
+    tps();
+    if(interval(600) == 1) moveEnemies(enemies,blocks,nEn,nBl,10,x,y,w3,h3,w2,h2,width,height,0,&nEn);
+  moveBullets(bullets,enemies,blocks,&numB,num,nEn,nBl,1,width,height,x,y);
   // background
     square(buffer, color(0xf4, 0x71, 0x42), 0, 0, width, height, width);
   // player
     square(buffer, color(0x59, 0xf4, 0x42), x, y, w1, h1, width);
-  // enemies
-    for( int i = 0 ; i< nEn; i+=2)
+  //enemies
+    for( int i = 0 ; i< nEn; i+=2){
        if(enemies[i] != -100 && enemies[i+1] != -100)
 	  square(buffer, color(0, 0, 0xff), enemies[i], enemies[i+1], w2, h2, width);
-
+       if(bullets[i] != -100 && bullets[i+1] != -100)
+	  square(buffer, color(0x59,0xf4,0x42),bullets[i],bullets[i+1],w4,h4,width);
+    }
   // blocks
     for( int i = 0 ; i < nBl; i+=2)
 	square(buffer,color(0xff,0xff,0xff), blocks[i], blocks[i+1], w3, h3, width);
-
     status = uefi_call_wrapper(gop->Blt, 10, gop, buffer, EfiBltBufferToVideo,0,0,0,0, width, height, 0);
     CHECK(status, FALSE);
-    WaitForSingleEvent(ST->ConIn->WaitForKey, 0);
     EFI_INPUT_KEY key;
     uefi_call_wrapper(ST->ConIn->ReadKeyStroke, 2, ST->ConIn, &key);
     int flag = -1;
+
     if (key.UnicodeChar == 'w'){ y -= delta; flag = 1;}
     if (key.UnicodeChar == 'a'){ x -= delta; flag = 0;}
     if (key.UnicodeChar == 's'){ y += delta; flag = 1;}
@@ -222,7 +383,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img, EFI_SYSTEM_TABLE *systab) {
     if (y + h1 > height) y = height-h1;
     if (x < 0) x = 0;
     if (x + w1 > width) x = width-w1;
-    blockCollision(blocks, &x, &y, nBl,delta,w3,h3,w1,h1, flag);
+    blockCollision(blocks, &x, &y, nBl,delta,w3,h3,w1,h1, flag,0,&numB);
     if(num==0)
 	level+=1;
   }
