@@ -31,5 +31,5 @@ make
 cd hacknslash
 <br>
 qemu-system-x86_64 -pflash bios.bin -hda fat:rw:hack-n-slash-uefi-bootloader -net none
-
+![](psmp1.png)*How to run the game under QEMU*
 Functionalitati: mai multe tipuri de inamici melee/ranged, mod de lupta player ranged, trei runde, trei vieti, blocuri untargetable
