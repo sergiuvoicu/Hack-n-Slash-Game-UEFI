@@ -3,9 +3,9 @@
 A Hack'n'Slash UEFI bootloader game developed in C, using the GNU-EFI library and OVMF. The project is developed in Linux.
 
 ## Examples
-Nuclear Throne: https://www.youtube.com/watch?v=n3IvM0f2Lvw
-The Binding of Isaac: https://www.youtube.com/watch?v=Sr4LReuBfhw
-Restless Dungeon: https://www.youtube.com/watch?v=RQ9dRZHqwmM
+Nuclear Throne: https://www.youtube.com/watch?v=n3IvM0f2Lvw <br>
+The Binding of Isaac: https://www.youtube.com/watch?v=Sr4LReuBfhw <br>
+Restless Dungeon: https://www.youtube.com/watch?v=RQ9dRZHqwmM <br>
 
 ## Installation
 ### Set-up
