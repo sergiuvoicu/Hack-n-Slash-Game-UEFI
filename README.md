@@ -1,7 +1,7 @@
 # Hack'n'Slash UEFI
 ## Description
 A Hack'n'Slash UEFI bootloader game developed in C, using the GNU-EFI library and OVMF. The project is developed in Linux. <br>
-The goal of the player is to reach and defeat all the enemies on contact, while avoiding to get hit by their bullets. 
+The goal of the player is to reach and defeat all the enemies on contact, whilst avoiding to get hit by their bullets. 
 
 ## Examples
 Nuclear Throne: https://www.youtube.com/watch?v=n3IvM0f2Lvw <br>
