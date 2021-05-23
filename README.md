@@ -23,7 +23,7 @@ cd hack-n-slash-uefi-bootloader <br>
 make
 ### Run 
 cd hacknslash <br>
-qemu-system-x86_64 -pflash bios.bin -hda fat:rw:hack-n-slash-uefi-bootloader -net none <br>
+qemu-system-x86_64 -pflash bios.bin -hda fat:rw:hack-n-slash-uefi-bootloader -net none <br> <br>
 ![](psmp1.png)*How to run the game under QEMU* <br>
 ## Functionalities
 - Player controlled on key input: **w/a/s/d** <br> 
@@ -35,7 +35,7 @@ qemu-system-x86_64 -pflash bios.bin -hda fat:rw:hack-n-slash-uefi-bootloader -ne
 - Timed fire rate <br>
 - Obstacles collision system: blocking the player and the enemies and deleting the bullets <br>
 - Three levels with ascending difficulty <br>
-- Interactive GUI using Graphics Output Protocol and Simple Text Output Protocol <br>
+- Interactive GUI using Graphics Output Protocol and Simple Text Output Protocol <br> <br>
 ![](psmp2.png)*First round* <br>
 ![](psmp3.png)*In-between rounds message* <br>
 ![](psmp4.png)*Last round* <br>
