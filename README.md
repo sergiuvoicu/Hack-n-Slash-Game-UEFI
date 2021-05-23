@@ -33,6 +33,8 @@ qemu-system-x86_64 -pflash bios.bin -hda fat:rw:hack-n-slash-uefi-bootloader -ne
 - Timed enemies position change <br>
 - Ranged enemies attack system which damages the player's life status <br>
 - Timed fire rate <br>
+- Bullets move towards the position of the player at the moment of the shooting and get deleted if the player is not there <br>
+- Enemies move towards the current position of the player <br>
 - Obstacles collision system: blocking the player and the enemies and deleting the bullets <br>
 - Three levels with ascending difficulty <br>
 - Life status updated on-hit <br>
