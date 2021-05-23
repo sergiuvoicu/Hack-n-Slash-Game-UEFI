@@ -1,3 +1,6 @@
+# Hack'n'Slash UEFI
+## Description
+
 Functionalitati: mai multe tipuri de inamici melee/ranged, mod de lupta player ranged, trei runde, trei vieti, blocuri untargetable
 
 Exemple:
