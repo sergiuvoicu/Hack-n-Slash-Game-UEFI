@@ -25,9 +25,11 @@ cp /usr/share/ovmf/OVMF.fd bios.bin
 git clone https://gitlab.com/smp2021/332aa/hack-n-slash-uefi-bootloader.git
 ### Compile
 cd hack-n-slash-uefi-bootloader
+<br>
 make
 ### Run 
 cd hacknslash
+<br>
 qemu-system-x86_64 -pflash bios.bin -hda fat:rw:hack-n-slash-uefi-bootloader -net none
 
 Functionalitati: mai multe tipuri de inamici melee/ranged, mod de lupta player ranged, trei runde, trei vieti, blocuri untargetable
