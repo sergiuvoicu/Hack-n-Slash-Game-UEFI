@@ -17,7 +17,7 @@ Restless Dungeon: https://www.youtube.com/watch?v=RQ9dRZHqwmM <br>
 mkdir hacknslash <br>
 cd hacknslash <br>
 cp /usr/share/ovmf/OVMF.fd bios.bin <br>
-git clone https://gitlab.com/smp2021/332aa/hack-n-slash-uefi-bootloader.git <br>
+git clone https://github.com/sergiuvoicu/Hack-n-Slash-Game-UEFI.git <br>
 ### Compile
 cd hack-n-slash-uefi-bootloader <br>
 make
